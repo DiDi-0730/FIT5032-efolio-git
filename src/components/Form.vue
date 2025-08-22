@@ -3,38 +3,88 @@
     <div class="row">
       <div class="col-12 col-md-8 offset-md-2">
         <h1 class="text-center">User Information Form</h1>
+
         <form @submit.prevent="submitForm">
           <div class="row g-3 mb-2">
             <div class="col-12 col-md-6">
               <label for="username" class="form-label">Username</label>
-              <input type="text" class="form-control" id="username" v-model="formData.username">
+              <input
+                type="text"
+                class="form-control"
+                :class="{ 'is-invalid': !!errors.username }"
+                id="username"
+                v-model="formData.username"
+                @blur="() => validateName(true)"
+                @input="() => validateName(false)"
+              />
+              <div v-if="errors.username" class="invalid-feedback">{{ errors.username }}</div>
             </div>
-            <div class="col 12 col-md-6">
+
+            <div class="col-12 col-md-6">
               <label for="password" class="form-label">Password</label>
-              <input type="password" class="form-control" id="password" v-model="formData.password">
+              <input
+                type="password"
+                class="form-control"
+                :class="{ 'is-invalid': !!errors.password }"
+                id="password"
+                v-model="formData.password"
+                @blur="() => validatePassword(true)"
+                @input="() => validatePassword(false)"
+              />
+              <div v-if="errors.password" class="invalid-feedback">{{ errors.password }}</div>
             </div>
           </div>
 
           <div class="row g-3 mb-2">
             <div class="col-12 col-md-6">
               <div class="form-check">
-                <input type="checkbox" class="form-check-input" id="isAustralian" v-model="formData.isAustralian">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  :class="{ 'is-invalid': !!errors.resident }"
+                  id="isAustralian"
+                  v-model="formData.isAustralian"
+                  @change="() => validateResident(true)"
+                  @input="() => validateResident(false)"
+                />
                 <label class="form-check-label" for="isAustralian">Australian Resident?</label>
+                <div v-if="errors.resident" class="invalid-feedback d-block">
+                  {{ errors.resident }}
+                </div>
               </div>
             </div>
-            <div class="col 12 col-md-6">
+
+            <div class="col-12 col-md-6">
               <label for="gender" class="form-label">Gender</label>
-              <select class="form-select" id="gender" v-model="formData.gender">
+              <select
+                class="form-select"
+                :class="{ 'is-invalid': !!errors.gender }"
+                id="gender"
+                v-model="formData.gender"
+                @blur="() => validateGender(true)"
+                @change="() => validateGender(false)"
+              >
+                <option value="" disabled>Select…</option>
                 <option value="male">Male</option>
                 <option value="female">Female</option>
                 <option value="other">Other</option>
               </select>
+              <div v-if="errors.gender" class="invalid-feedback">{{ errors.gender }}</div>
             </div>
           </div>
 
           <div class="mb-3">
             <label for="reason" class="form-label">Reason for joining</label>
-            <textarea class="form-control" id="reason" rows="3" v-model="formData.reason"></textarea>
+            <textarea
+              class="form-control"
+              :class="{ 'is-invalid': !!errors.reason }"
+              id="reason"
+              rows="3"
+              v-model="formData.reason"
+              @blur="() => validateReason(true)"
+              @input="() => validateReason(false)"
+            ></textarea>
+            <div v-if="errors.reason" class="invalid-feedback">{{ errors.reason }}</div>
           </div>
 
           <div class="text-center">
@@ -42,100 +92,159 @@
             <button type="button" class="btn btn-secondary" @click="clearForm">Clear</button>
           </div>
         </form>
-        
+
+        <!-- Submitted cards -->
         <div class="row mt-5" v-if="submittedCards.length">
           <div class="d-flex flex-wrap justify-content-start">
-            <div v-for="(card, index) in submittedCards" :key="index" class="card m-2" style="width: 18rem;">
-              <div class="card-header">
-                User Information
-              </div>
+            <div
+              v-for="(card, index) in submittedCards"
+              :key="index"
+              class="card m-2"
+              style="width: 18rem;"
+            >
+              <div class="card-header">User Information</div>
               <ul class="list-group list-group-flush">
                 <li class="list-group-item">Username: {{ card.username }}</li>
                 <li class="list-group-item">Password: {{ card.password }}</li>
-                <li class="list-group-item">Australian Resident: {{ card.isAustralian ? 'Yes' : 'No' }}</li>
+                <li class="list-group-item">
+                  Australian Resident: {{ card.isAustralian ? 'Yes' : 'No' }}
+                </li>
                 <li class="list-group-item">Gender: {{ card.gender }}</li>
                 <li class="list-group-item">Reason: {{ card.reason }}</li>
               </ul>
             </div>
           </div>
         </div>
+        <!-- /Submitted cards -->
       </div>
     </div>
   </div>
 </template>
 
-
-<script>
-export default {
-  data() {
-    return {
-      formData: {
-        username: '',
-        password: '',
-        isAustralian: false,
-        gender: '',
-        reason: ''
-      },
-      submittedCards: []
-    };
-  },
-  methods: {
-    submitForm() {
-     
-      this.submittedCards.push({ ...this.formData });
-      this.clearForm();
-    },
-    clearForm() {
-      this.formData = {
-        username: '',
-        password: '',
-        isAustralian: false,
-        gender: '',
-        reason: ''
-      };
-    }
-  }
-};
-</script>
-
-
-
 <script setup>
-import { ref } from 'vue';
-  
+import { ref } from 'vue'
+
 const formData = ref({
+  username: '',
+  password: '',
+  isAustralian: false,
+  gender: '',
+  reason: ''
+})
+
+const submittedCards = ref([])
+
+const errors = ref({
+  username: null,
+  password: null,
+  resident: null,
+  gender: null,
+  reason: null
+})
+
+/* === validators === */
+const validateName = (blur) => {
+  if (formData.value.username.trim().length < 3) {
+    if (blur) errors.value.username = 'Name must be at least 3 characters'
+  } else {
+    errors.value.username = null
+  }
+}
+
+const validatePassword = (blur) => {
+  const pwd = formData.value.password || ''
+  const minLength = 8
+  const hasUpper = /[A-Z]/.test(pwd)
+  const hasLower = /[a-z]/.test(pwd)
+  const hasNum   = /\d/.test(pwd)
+  const hasSpec  = /[!@#$%^&*(),.?":{}|<>]/.test(pwd)
+
+  if (pwd.length < minLength) {
+    if (blur) errors.value.password = `Password must be at least ${minLength} characters long.`
+  } else if (!hasUpper) {
+    if (blur) errors.value.password = 'Password must contain at least one uppercase letter.'
+  } else if (!hasLower) {
+    if (blur) errors.value.password = 'Password must contain at least one lowercase letter.'
+  } else if (!hasNum) {
+    if (blur) errors.value.password = 'Password must contain at least one number.'
+  } else if (!hasSpec) {
+    if (blur) errors.value.password = 'Password must contain at least one special character.'
+  } else {
+    errors.value.password = null
+  }
+}
+
+const validateResident = (blur) => {
+  if (!formData.value.isAustralian) {
+    if (blur) errors.value.resident = 'Please confirm you are an Australian resident.'
+  } else {
+    errors.value.resident = null
+  }
+}
+
+const validateGender = (blur) => {
+  if (!formData.value.gender) {
+    if (blur) errors.value.gender = 'Please select your gender.'
+  } else {
+    errors.value.gender = null
+  }
+}
+
+const validateReason = (blur) => {
+  const text = (formData.value.reason || '').trim()
+  const min = 10
+  if (text.length < min) {
+    if (blur) errors.value.reason = `Please provide at least ${min} characters.`
+  } else {
+    errors.value.reason = null
+  }
+}
+
+const submitForm = () => {
+  validateName(true)
+  validatePassword(true)
+  validateResident(true)
+  validateGender(true)
+  validateReason(true)
+
+  const ok = Object.values(errors.value).every(v => v === null)
+  if (!ok) return
+
+  submittedCards.value.push({ ...formData.value })
+  clearForm()
+}
+
+const clearForm = () => {
+  formData.value = {
     username: '',
     password: '',
     isAustralian: false,
-    reason: '',
-    gender: ''
-});
-
-const submittedCards = ref([]);
-
-const submitForm = () => {
-    submittedCards.value.push({
-        ...formData.value
-    });
-};
-
-
+    gender: '',
+    reason: ''
+  }
+  errors.value = {
+    username: null,
+    password: null,
+    resident: null,
+    gender: null,
+    reason: null
+  }
+}
 </script>
 
 <style scoped>
-/* Our logic will go here */
 .card {
-   border: 1px solid #ccc;
-   border-radius: 10px;
-   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-   }
-   .card-header {
-   background-color: #275FDA;
-   color: white;
-   padding: 10px;
-   border-radius: 10px 10px 0 0;
-   }
-   .list-group-item {
-   padding: 10px;
-   }
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.card-header {
+  background-color: #275fda;
+  color: #fff;
+  padding: 10px;
+  border-radius: 10px 10px 0 0;
+}
+.list-group-item {
+  padding: 10px;
+}
 </style>
